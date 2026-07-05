@@ -1,0 +1,280 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>College Service Hub</title>
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+body { font-family: 'Segoe UI', sans-serif; }
+
+.hidden { display:none; }
+
+.hero {
+  height:220px;
+  background-image:url('https://images.unsplash.com/photo-1523050854058-8df90110c9f1');
+  background-size:cover;
+  background-position:center;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:white;
+  font-size:34px;
+  font-weight:bold;
+  text-shadow:0 3px 10px rgba(0,0,0,0.7);
+}
+
+.tab {
+  padding:12px 18px;
+  cursor:pointer;
+  font-weight:600;
+}
+
+.active {
+  border-bottom:3px solid #dc2626;
+  color:#dc2626;
+}
+
+.card {
+  background:white;
+  padding:15px;
+  margin:10px 0;
+  border-radius:12px;
+  box-shadow:0 4px 10px rgba(0,0,0,0.08);
+}
+
+.notice-img {
+  width:100%;
+  height:180px;
+  object-fit:cover;
+  border-radius:10px;
+}
+</style>
+</head>
+
+<body class="bg-gray-100">
+
+<!-- LOGIN -->
+<div id="loginPage" class="p-6 max-w-md mx-auto mt-24 bg-white rounded-xl shadow">
+
+<h2 class="text-2xl font-bold mb-4 text-center">College Service Hub</h2>
+
+<input id="email" class="border p-2 w-full mb-3 rounded" placeholder="admin / student">
+<input id="pass" type="password" class="border p-2 w-full mb-3 rounded" placeholder="1234">
+
+<button onclick="login()" class="bg-red-600 text-white w-full py-2 rounded">
+Login
+</button>
+
+<p class="text-xs text-center mt-3 text-gray-500">
+Admin: admin / 1234 <br> Student: student / 1234
+</p>
+
+</div>
+
+<!-- APP -->
+<div id="app" class="hidden">
+
+<div class="hero">College Service Hub</div>
+
+<!-- NAV -->
+<div class="flex bg-white justify-center shadow">
+<div class="tab active" onclick="show('notices')">📢 Notices</div>
+<div class="tab" onclick="show('faq')">💬 FAQ</div>
+<div class="tab" onclick="show('tickets')">📩 Grievance</div>
+<div class="tab" onclick="show('dashboard')">📊 Dashboard</div>
+</div>
+
+<!-- NOTICES -->
+<div id="notices" class="p-4 max-w-3xl mx-auto"></div>
+
+<!-- FAQ -->
+<div id="faq" class="hidden p-4 max-w-2xl mx-auto">
+<input id="q" class="border p-3 w-full rounded" placeholder="Ask about fees, exams, hostel...">
+<button onclick="ask()" class="bg-red-600 text-white px-4 py-2 mt-2 rounded">
+Ask
+</button>
+
+<div id="ans" class="card"></div>
+</div>
+
+<!-- TICKETS -->
+<div id="tickets" class="hidden p-4 max-w-2xl mx-auto">
+
+<input id="title" class="border p-2 w-full mb-2 rounded" placeholder="Title">
+<textarea id="desc" class="border p-2 w-full mb-2 rounded" placeholder="Description"></textarea>
+
+<select id="priority" class="border p-2 w-full mb-2 rounded">
+<option>low</option>
+<option>medium</option>
+<option>high</option>
+</select>
+
+<button onclick="createTicket()" class="bg-green-600 text-white w-full py-2 rounded">
+Submit Ticket
+</button>
+
+<div id="ticketList"></div>
+
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard" class="hidden p-4 max-w-2xl mx-auto">
+
+<div class="card">🟡 Open: <span id="open">0</span></div>
+<div class="card">🔵 In Progress: <span id="progress">0</span></div>
+<div class="card">🟢 Resolved: <span id="resolved">0</span></div>
+
+</div>
+
+</div>
+
+<script>
+
+/* ======================
+   FAKE DATABASE (FULL SYSTEM)
+====================== */
+
+let DB = {
+users: [
+{email:"admin", pass:"1234"},
+{email:"student", pass:"1234"}
+],
+tickets: [],
+notices: [
+{
+title:"Exam Schedule Released",
+desc:"Semester exams start next week. Prepare well.",
+img:"https://images.unsplash.com/photo-1523240795612-9a054b0db644"
+},
+{
+title:"Fee Payment Notice",
+desc:"Last date extended for fee payment.",
+img:"https://images.unsplash.com/photo-1554224155-8d04cb21cd6c"
+},
+{
+title:"Library Update",
+desc:"New books added in library section.",
+img:"https://images.unsplash.com/photo-1524995997946-a1c2e315a42f"
+}
+]
+};
+
+let currentUser = null;
+
+/* ======================
+   LOGIN
+====================== */
+function login(){
+
+let u = DB.users.find(x =>
+x.email === email.value.trim() &&
+x.pass === pass.value.trim()
+);
+
+if(!u){
+alert("Invalid login");
+return;
+}
+
+currentUser = u;
+
+loginPage.classList.add("hidden");
+app.classList.remove("hidden");
+
+loadNotices();
+renderTickets();
+updateDashboard();
+}
+
+/* ======================
+   TAB SWITCH
+====================== */
+function show(id){
+document.querySelectorAll("#app > div[id]").forEach(d=>d.classList.add("hidden"));
+document.getElementById(id).classList.remove("hidden");
+}
+
+/* ======================
+   NOTICES (CANVA STYLE)
+====================== */
+function loadNotices(){
+
+document.getElementById("notices").innerHTML =
+DB.notices.map(n=>`
+<div class="card">
+<img class="notice-img" src="${n.img}">
+<h2 class="text-lg font-bold mt-2">${n.title}</h2>
+<p class="text-gray-600">${n.desc}</p>
+</div>
+`).join("");
+
+}
+
+/* ======================
+   FAQ BOT (SMART RULE BASED)
+====================== */
+function ask(){
+
+let q = document.getElementById("q").value.toLowerCase();
+
+let ans = "Please contact college admin office.";
+
+if(q.includes("fee")) ans = "Fees can be paid via student portal.";
+if(q.includes("exam")) ans = "Exam timetable is published in notices.";
+if(q.includes("hostel")) ans = "Hostel allotment depends on availability.";
+if(q.includes("library")) ans = "Library is open 8 AM - 8 PM.";
+
+document.getElementById("ans").innerHTML =
+"<b>Answer:</b> " + ans;
+
+}
+
+/* ======================
+   GRIEVANCE SYSTEM
+====================== */
+function createTicket(){
+
+DB.tickets.push({
+title:title.value,
+desc:desc.value,
+priority:priority.value,
+status:"open",
+user:currentUser.email
+});
+
+renderTickets();
+updateDashboard();
+
+}
+
+/* ======================
+   RENDER TICKETS
+====================== */
+function renderTickets(){
+
+ticketList.innerHTML = DB.tickets.map(t=>`
+<div class="card">
+<b>${t.title}</b><br>
+${t.desc}<br>
+<small>${t.priority} | ${t.status} | ${t.user}</small>
+</div>
+`).join("");
+
+}
+
+/* ======================
+   DASHBOARD
+====================== */
+function updateDashboard(){
+
+open.innerText = DB.tickets.filter(t=>t.status=="open").length;
+progress.innerText = DB.tickets.filter(t=>t.status=="progress").length;
+resolved.innerText = DB.tickets.filter(t=>t.status=="resolved").length;
+
+}
+
+</script>
+
+</body>
+</html>
